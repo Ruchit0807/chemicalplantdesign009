@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tankInputSchema, TankInputSchema } from '../utils/validation';
@@ -33,18 +33,7 @@ const Calculator: React.FC<CalculatorProps> = ({ onCalculationComplete, calculat
   // Watch form values for real-time updates
   const watchedValues = form.watch();
 
-  // Auto-calculate when form values change
-  useEffect(() => {
-    if (form.formState.isValid && Object.keys(watchedValues).length > 0) {
-      const timeoutId = setTimeout(() => {
-        handleCalculate();
-      }, 500); // Debounce calculations
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [watchedValues]);
-
-  const handleCalculate = async () => {
+  const handleCalculate = useCallback(async () => {
     if (!form.formState.isValid) return;
 
     setIsCalculating(true);
@@ -60,7 +49,18 @@ const Calculator: React.FC<CalculatorProps> = ({ onCalculationComplete, calculat
     } finally {
       setIsCalculating(false);
     }
-  };
+  }, [form]);
+
+  // Auto-calculate when form values change
+  useEffect(() => {
+    if (form.formState.isValid && Object.keys(watchedValues).length > 0) {
+      const timeoutId = setTimeout(() => {
+        handleCalculate();
+      }, 500); // Debounce calculations
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [watchedValues, form.formState.isValid, handleCalculate]);
 
   const handlePresetSelect = (presetId: string) => {
     const preset = PRESET_TANKS.find(p => p.id === presetId);
